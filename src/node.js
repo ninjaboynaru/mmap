@@ -26,7 +26,7 @@ function Node(mindMap, text, x=0, y=0, center=false, connections=[]) {
 	}
 
 	this.container.addChild(this.background, this.text);
-	this.mindMap.stage.addChild(this.container);
+	this.mindMap.nodeContainer.addChild(this.container);
 
 
 	this.container.on('mousedown', this.mouseDown.bind(this));
@@ -73,11 +73,11 @@ Node.prototype.pressMove = function pressMove(event) {
 	}
 	else {
 		this.move(event.stageX, event.stageY, true);
-		this.container.alpha = 0.5;
+		this.text.alpha = 0.5;
 	}
 }
 Node.prototype.pressUp = function pressUp(event) {
-	this.container.alpha = 1;
+	this.text.alpha = 1;
 	if(event.nativeEvent.ctrlKey === true || this.connectionActive) {
 		this.connectionActive = false;
 		this.mindMap.nodeUp();

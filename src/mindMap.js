@@ -9,6 +9,8 @@ function MindMap(canvasId = 'js-mindmap-canvas') {
 	const createjs = window.createjs;
 
 	this.stage = new createjs.Stage(canvasId);
+	this.connectionContainer = new createjs.Container();
+	this.nodeContainer = new createjs.Container();
 	this.nodes = [new Node(this, 'Root', 0, 0)];
 	this.updateInterval = 0;
 	this.mouseOverFrequency = 100;
@@ -19,10 +21,14 @@ function MindMap(canvasId = 'js-mindmap-canvas') {
 		connection: null
 	}
 
+	this.nodeContainer.x = 0;
+	this.nodeContainer.y = 0;
+
 	const rootNode = this.nodes[0];
 	rootNode.container.x = this.stage.canvas.width/2 - rootNode.width/2;
 	rootNode.container.y = this.stage.canvas.height/2 - rootNode.height/2;
 
+	this.stage.addChild(this.connectionContainer, this.nodeContainer);
 	this.stage.enableDOMEvents(true);
 	this.stage.enableMouseOver(this.mouseOverFrequency);
 
@@ -40,7 +46,7 @@ function MindMap(canvasId = 'js-mindmap-canvas') {
 }
 
 MindMap.prototype.connectionStart = function startConnection(node) {
-	const newConnection = new Connection(this.stage);
+	const newConnection = new Connection(this.connectionContainer);
 	newConnection.start(node);
 
 	this.pendingConnection.startNode = node;

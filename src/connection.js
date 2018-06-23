@@ -1,5 +1,5 @@
-function Connection(stage) {
-	this.stage = stage;
+function Connection(container) {
+	this.container = container;
 	this.nodeA;
 	this.nodeB;
 	this.line;
@@ -11,7 +11,7 @@ Connection.prototype.start = function start(nodeA) {
 	this.line = new createjs.Shape();
 	this.line.x = nodeA.container.x + nodeA.width/2;
 	this.line.y = nodeA.container.y + nodeA.height/2;
-	this.stage.addChild(this.line);
+	this.container.addChild(this.line);
 }
 
 Connection.prototype.move = function move(x, y) {
@@ -27,7 +27,9 @@ Connection.prototype.move = function move(x, y) {
 
 Connection.prototype.end = function end(node) {
 	this.nodeB = node;
-	this.move(node.container.x, node.container.y);
+	const xPos = node.container.x + node.width/2;
+	const yPos = node.container.y + node.height/2;
+	this.move(xPos, yPos);
 }
 
 Connection.prototype.update = function() {
