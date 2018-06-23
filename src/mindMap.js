@@ -7,12 +7,13 @@ function randomId() {
 
 function MindMap(canvasId = 'js-mindmap-canvas') {
 	const createjs = window.createjs;
+	const Matter = window.Matter;
 
 	this.stage = new createjs.Stage(canvasId);
 	this.connectionContainer = new createjs.Container();
 	this.nodeContainer = new createjs.Container();
-	this.nodes = [new Node(this, 'Root', 0, 0)];
-	this.updateInterval = 0;
+	this.nodes = [];
+	this.updateInterval = 1;
 	this.mouseOverFrequency = 100;
 	this.updateIntervalId = null;
 	this.pendingConnection = {
@@ -21,16 +22,39 @@ function MindMap(canvasId = 'js-mindmap-canvas') {
 		connection: null
 	}
 
+
+	this.engine = Matter.Engine.create();
+	this.engine.world.gravity.y = 0;
+	Matter.Engine.run(this.engine);
+
+
 	this.nodeContainer.x = 0;
 	this.nodeContainer.y = 0;
 
-	const rootNode = this.nodes[0];
+	const rootNode = new Node(this, 'Root', 0, 0);
+	this.nodes.push(rootNode);
 	rootNode.container.x = this.stage.canvas.width/2 - rootNode.width/2;
 	rootNode.container.y = this.stage.canvas.height/2 - rootNode.height/2;
 
 	this.stage.addChild(this.connectionContainer, this.nodeContainer);
 	this.stage.enableDOMEvents(true);
 	this.stage.enableMouseOver(this.mouseOverFrequency);
+
+	// const Matter = window.Matter;
+	// const engine = Matter.Engine.create();
+	// const renderer = Matter.Render.create({
+	// 	canvas: this.stage.canvas,
+	// 	engine,
+	// });
+	//
+	// const boxA = Matter.Bodies.rectangle(80,80, 80, 80);
+	// const boxB = Matter.Bodies.rectangle(120, 200, 80, 80);
+	// const ground = Matter.Bodies.rectangle(0, 300, 1000, 10, { isStatic: true });
+	//
+	// Matter.World.add(engine.world, [boxA, boxB, ground]);
+	// Matter.Engine.run(engine);
+	// // Matter.Render.run(renderer);
+
 
 	this.updateIntervalId = window.setInterval(() => {
 		this.stage.update();
