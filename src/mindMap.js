@@ -1,117 +1,59 @@
 import Node from './node.js';
-import Connection from './connection.js';
+import ConnectionManager from './connectionManager.js';
+
+const createjs = window.createjs;
+const Matter = window.Matter;
 
 function randomId() {
 	return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
 function MindMap(canvasId = 'js-mindmap-canvas') {
-	const createjs = window.createjs;
-	const Matter = window.Matter;
-
 	this.stage = new createjs.Stage(canvasId);
-	this.connectionContainer = new createjs.Container();
+	this.engine = Matter.Engine.create();
+	this.connectionManager = new ConnectionManager();
 	this.nodeContainer = new createjs.Container();
 	this.nodes = [];
-	this.updateInterval = 1;
-	this.mouseOverFrequency = 100;
-	this.updateIntervalId = null;
-	this.pendingConnection = {
-		startNode: null,
-		endNode: null,
-		connection: null
-	}
 
+	this.settings = {
+		mouseOverFrequency: 100
+	};
 
-	this.engine = Matter.Engine.create();
+	this.init();
+}
+
+MindMap.prototype.init = function init() {
 	this.engine.world.gravity.y = 0;
 	Matter.Engine.run(this.engine);
 
-
-	this.nodeContainer.x = 0;
-	this.nodeContainer.y = 0;
-
-	const rootNode = new Node(this, 'Root', 0, 0);
-	this.nodes.push(rootNode);
-	rootNode.container.x = this.stage.canvas.width/2 - rootNode.width/2;
-	rootNode.container.y = this.stage.canvas.height/2 - rootNode.height/2;
-
-	this.stage.addChild(this.connectionContainer, this.nodeContainer);
+	this.stage.addChild(this.connectionManager.container, this.nodeContainer);
 	this.stage.enableDOMEvents(true);
 	this.stage.enableMouseOver(this.mouseOverFrequency);
 
-	// const Matter = window.Matter;
-	// const engine = Matter.Engine.create();
-	// const renderer = Matter.Render.create({
-	// 	canvas: this.stage.canvas,
-	// 	engine,
-	// });
-	//
-	// const boxA = Matter.Bodies.rectangle(80,80, 80, 80);
-	// const boxB = Matter.Bodies.rectangle(120, 200, 80, 80);
-	// const ground = Matter.Bodies.rectangle(0, 300, 1000, 10, { isStatic: true });
-	//
-	// Matter.World.add(engine.world, [boxA, boxB, ground]);
-	// Matter.Engine.run(engine);
-	// // Matter.Render.run(renderer);
+	const rootNode = this.createNode(this, 'Root', 0, 0);
+	this.nodes.push(rootNode);
+	rootNode.shapes.container.x = this.stage.canvas.width/2 - rootNode.size.width/2;
+	rootNode.shapes.container.y = this.stage.canvas.height/2 - rootNode.size.height/2;
 
-
-	this.updateIntervalId = window.setInterval(() => {
-		this.stage.update();
-	}, this.updateInterval);
-
-	this.stage.on('stagemousedown', (event) => {
-		if(event.relatedTarget) {
-			return;
-		}
-
-		this.nodes.push(new Node(this, randomId(), event.stageX, event.stageY, true) );
-	});
+	Matter.Events.on(this.engine, 'afterUpdate', () => this.stage.update());
+	this.stage.on('stagemousedown', this.onClick.bind(this));
 }
 
-MindMap.prototype.connectionStart = function startConnection(node) {
-	const newConnection = new Connection(this.connectionContainer);
-	newConnection.start(node);
+MindMap.prototype.createNode = function(...args) {
+	const newNode = new Node(...args);
+	this.nodes.push(newNode);
+	this.nodeContainer.addChild(newNode.shapes.container);
+	Matter.World.add(this.engine.world, newNode.rigidbody);
 
-	this.pendingConnection.startNode = node;
-	this.pendingConnection.connection = newConnection;
+	return newNode;
 }
-MindMap.prototype.connectionUpdate = function connectionUpdate(x, y) {
-	if(this.pendingConnection.endNode) {
+
+MindMap.prototype.onClick = function onClick(event) {
+	if(event.relatedTarget) {
 		return;
 	}
 
-	this.pendingConnection.connection.move(x, y);
-}
-MindMap.prototype.nodeEnter = function nodeEnter(node) {
-	if(!this.pendingConnection.startNode || this.pendingConnection.startNode === node) {
-		return;
-	}
-
-	this.pendingConnection.endNode = node;
-	this.pendingConnection.connection.end(node);
-}
-MindMap.prototype.nodeExit = function nodeExit(node) {
-	if(node === this.pendingConnection.endNode) {
-		this.pendingConnection.endNode = null;
-	}
-}
-MindMap.prototype.nodeUp = function nodeUp() {
-	if(!this.pendingConnection.connection) {
-		return;
-	}
-
-	if(this.pendingConnection.startNode && this.pendingConnection.endNode) {
-		this.pendingConnection.startNode.connections.push(this.pendingConnection.connection);
-		this.pendingConnection.endNode.connections.push(this.pendingConnection.connection);
-	}
-	else {
-		this.pendingConnection.connection.clear();
-	}
-
-	this.pendingConnection.startNode = null;
-	this.pendingConnection.endNode = null;
-	this.pendingConnection.connection = null;
+	this.nodes.push(this.createNode(this, randomId(), event.stageX, event.stageY, true) );
 }
 
 export default MindMap;

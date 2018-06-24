@@ -1,22 +1,20 @@
-function Connection(container) {
-	this.container = container;
+const createjs = window.createjs;
+
+function Connection() {
+	this.line = new createjs.Shape();
 	this.nodeA;
 	this.nodeB;
-	this.line;
 }
-Connection.prototype.start = function start(nodeA) {
-	const createjs = window.createjs;
 
+Connection.prototype.start = function start(nodeA) {
 	this.nodeA = nodeA;
-	this.line = new createjs.Shape();
-	this.line.x = nodeA.container.x + nodeA.width/2;
-	this.line.y = nodeA.container.y + nodeA.height/2;
-	this.container.addChild(this.line);
+	this.line.x = nodeA.shapes.container.x + nodeA.size.width/2;
+	this.line.y = nodeA.shapes.container.y + nodeA.size.height/2;
 }
 
 Connection.prototype.move = function move(x, y) {
 	const graphics = this.line.graphics;
-	this.line.graphics.clear();
+	this.clear();
 
 	graphics.beginStroke('green').setStrokeStyle(4).moveTo(0,0);
 
@@ -27,8 +25,8 @@ Connection.prototype.move = function move(x, y) {
 
 Connection.prototype.end = function end(node) {
 	this.nodeB = node;
-	const xPos = node.container.x + node.width/2;
-	const yPos = node.container.y + node.height/2;
+	const xPos = node.shapes.container.x + node.size.width/2;
+	const yPos = node.shapes.container.y + node.size.height/2;
 	this.move(xPos, yPos);
 }
 

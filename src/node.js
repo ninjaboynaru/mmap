@@ -1,120 +1,136 @@
-function Node(mindMap, text, x=0, y=0, center=false, connections=[]) {
+const Matter = window.Matter;
+
+function Node(mindMap, text, x=0, y=0, center) {
 	const createjs = window.createjs;
 	const Matter = window.Matter;
 
 	this.mindMap = mindMap
-	this.container = new createjs.Container();
-	this.background = new createjs.Shape();
-	this.text = new createjs.Text(text, '16px Arial');
-	this.physicsBody = null;
-	this.connections = [...connections];
+	this.connections = [];
+	this.rigidbody = null;
+	this.shapes = {
+		container: null,
+		background: null,
+		text: null
+	}
+	this.padding = {
+		x: 32,
+		y:16
+	};
+	this.size = {
+		width: null,
+		height: null
+	}
+
 	this.connectionActive = false;
-	this.moving = false;
+	this.dragging = false;
 
-	const padding = {x: 32, y: 16};
-	this.width = this.text.getMeasuredWidth() + (padding.x * 2);
-	this.height = this.text.getMeasuredHeight() + (padding.y * 2);
+	this.init(text, x, y, center);
+}
 
-	this.text.x = this.width/2 - this.text.getMeasuredWidth()/2;
-	this.text.y = this.height/2 - this.text.getMeasuredHeight()/2;
-	this.background.graphics.beginFill('white').beginStroke('black').drawRoundRect(0, 0, this.width, this.height, 4);
+Node.prototype.init = function init(text, x, y, center=false) {
+	this.shapes.container = new createjs.Container();
+	this.shapes.background = new createjs.Shape();
+	this.shapes.text = new createjs.Text(text, '16px Arial');
+
+	this.size.width = this.shapes.text.getMeasuredWidth() + (this.padding.x * 2);
+	this.size.height = this.shapes.text.getMeasuredHeight() + (this.padding.y * 2);
+
+	this.shapes.text.x = this.size.width/2 - this.shapes.text.getMeasuredWidth()/2;
+	this.shapes.text.y = this.size.height/2 - this.shapes.text.getMeasuredHeight()/2;
+
+	this.shapes.background.graphics
+	.beginFill('white')
+	.beginStroke('black')
+	.drawRoundRect(0, 0, this.size.width, this.size.height, 4);
 
 	if(center === true) {
-		this.container.x = x - this.width/2;
-		this.container.y = y - this.height/2;
+		this.shapes.container.x = x - this.size.width/2;
+		this.shapes.container.y = y - this.size.height/2;
 	}
 	else {
-		this.container.x = x;
-		this.container.y = y;
+		this.shapes.container.x = x;
+		this.shapes.container.y = y;
 	}
 
-	const xPos = this.container.x + this.width/2;
-	const yPos = this.container.y + this.height/2;
-	this.physicsBody = Matter.Bodies.rectangle(xPos, yPos, this.width, this.height, {frictionAir: 0.2});
-	Matter.World.add(this.mindMap.engine.world, this.physicsBody);
+	const bodyPos = this.calcRigidbodyPos();
+	this.rigidbody = Matter.Bodies.rectangle(bodyPos.x, bodyPos.y, this.size.width, this.size.height, {frictionAir: 0.2});
 
-	this.container.addChild(this.background, this.text);
-	this.mindMap.nodeContainer.addChild(this.container);
+	this.shapes.container.addChild(this.shapes.background, this.shapes.text);
+	this.mindMap.nodeContainer.addChild(this.shapes.container);
 
-	this.container.on('mousedown', this.mouseDown.bind(this));
-	this.container.on('mouseover', this.mouseOver.bind(this));
-	this.container.on('mouseout', this.mouseOut.bind(this));
-	this.container.on('pressmove', this.pressMove.bind(this));
-	this.container.on('pressup', this.pressUp.bind(this));
+	this.shapes.container.on('mousedown', this.mouseDown.bind(this));
+	this.shapes.container.on('mouseover', this.mouseOver.bind(this));
+	this.shapes.container.on('mouseout', this.mouseOut.bind(this));
+	this.shapes.container.on('pressmove', this.pressMove.bind(this));
+	this.shapes.container.on('pressup', this.pressUp.bind(this));
 	Matter.Events.on(this.mindMap.engine, 'afterUpdate', this.physicsUpdate.bind(this));
 }
 
-Node.prototype.physicsUpdate = function physicsUpdate() {
-	const physicsPosition = this.physicsBody.position;
-	this.connections.forEach((connection)=>connection.update());
 
-	if(this.moving === false) {
-		this.container.x = physicsPosition.x - this.width/2;
-		this.container.y = physicsPosition.y - this.height/2;
+Node.prototype.calcShapePos = function calcShapePos() {
+	return {
+		x: this.rigidbody.position.x - this.size.width/2,
+		y: this.rigidbody.position.y - this.size.height/2,
 	}
-	else {
-		let pos = {
-			x: this.container.x + this.width/2,
-			y: this.container.y + this.height/2
-		};
-		Matter.Body.setPosition(this.physicsBody, pos);
+}
+Node.prototype.calcRigidbodyPos = function calcRigidbodyPos() {
+	return {
+		x: this.shapes.container.x + this.size.width/2,
+		y: this.shapes.container.y + this.size.height/2
 	}
 }
 
-Node.prototype.move = function move(x, y, center=false) {
-	this.moving = true;
-	window.Matter.Body.setStatic(this.physicsBody, false);
+Node.prototype.physicsUpdate = function physicsUpdate() {
+	const shapePos = this.calcShapePos();
+	this.shapes.container.x = shapePos.x;
+	this.shapes.container.y = shapePos.y;
+	this.connections.forEach((connection)=>connection.update());
+}
 
+Node.prototype.move = function move(x, y, center=false) {
 	let xPos = x;
 	let yPos = y;
 
 	if(center === true) {
-		xPos -= this.width/2;
-		yPos -= this.height/2;
+		xPos -= this.size.width/2;
+		yPos -= this.size.height/2;
 	}
 
-	this.container.x = xPos;
-	this.container.y = yPos;
-
-	for(const connection of this.connections) {
-		connection.update();
-	}
+	this.shapes.container.x = xPos;
+	this.shapes.container.y = yPos;
+	Matter.Body.setPosition(this.rigidbody, this.calcRigidbodyPos());
 }
-
-
 
 Node.prototype.mouseDown = function mouseDown(event) {
 	if(event.nativeEvent.ctrlKey === true) {
 		this.connectionActive = true;
-		this.mindMap.connectionStart(this);
+		this.mindMap.connectionManager.nodeDown(this);
 	}
 }
 Node.prototype.mouseOver = function mouseOver(event) {
-	this.mindMap.nodeEnter(this);
+	this.mindMap.connectionManager.nodeEnter(this);
 }
 Node.prototype.mouseOut = function mouseOut(event) {
-	this.mindMap.nodeExit(this);
+	this.mindMap.connectionManager.nodeExit(this);
 }
 Node.prototype.pressMove = function pressMove(event) {
 	if(this.connectionActive === true) {
-		this.mindMap.connectionUpdate(event.stageX, event.stageY);
+		this.mindMap.connectionManager.nodeMove(event.stageX, event.stageY);
 	}
 	else {
 		this.move(event.stageX, event.stageY, true);
-		this.text.alpha = 0.5;
+		this.shapes.text.alpha = 0.5;
+		this.dragging = true;
 	}
 }
 Node.prototype.pressUp = function pressUp(event) {
-	this.text.alpha = 1;
-	this.moving = false;
-	window.Matter.Body.setStatic(this.physicsBody, false);
+	this.shapes.text.alpha = 1;
+	this.dragging = false;
 
 	if(this.connectionActive) {
 		this.connectionActive = false;
-		this.mindMap.nodeUp();
+		this.mindMap.connectionManager.nodeUp();
 	}
 }
-
-
 
 export default Node;
