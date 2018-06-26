@@ -44,19 +44,24 @@ Node.prototype.init = function init(text, x, y, center=false) {
 	.drawRoundRect(0, 0, this.size.width, this.size.height, 4);
 
 	if(center === true) {
-		this.shapes.container.x = x - this.size.width/2;
-		this.shapes.container.y = y - this.size.height/2;
-	}
-	else {
-		this.shapes.container.x = x;
-		this.shapes.container.y = y;
+		x = x - this.size.width/2;
+		y = y - this.size.height/2;
 	}
 
-	const bodyPos = this.calcRigidbodyPos();
-	this.rigidbody = Matter.Bodies.rectangle(bodyPos.x, bodyPos.y, this.size.width, this.size.height, {frictionAir: 0.2});
+
+	const rigidbodyPosition = this.calcRigidbodyPos(x, y);
+
+	this.shapes.container.x = x;
+	this.shapes.container.y = y;
+	this.rigidbody = Matter.Bodies.rectangle(
+		rigidbodyPosition.x,
+		rigidbodyPosition.y,
+		this.size.width,
+		this.size.height,
+		{frictionAir: 0.2}
+	);
 
 	this.shapes.container.addChild(this.shapes.background, this.shapes.text);
-	this.mindMap.nodeContainer.addChild(this.shapes.container);
 
 	this.shapes.container.on('mousedown', this.mouseDown.bind(this));
 	this.shapes.container.on('mouseover', this.mouseOver.bind(this));
@@ -67,38 +72,56 @@ Node.prototype.init = function init(text, x, y, center=false) {
 }
 
 
-Node.prototype.calcShapePos = function calcShapePos() {
+/**
+* @function
+* @public
+* Calculate the correct position of a shape based on coordinates in physics space.
+* rigidbody/physics position is relative to center - canvas/shape position is relative to top-left corner
+*
+* @returns {object} An object with structure {x: number, y: number}. x and y are coridantes in canvas space.
+*/
+Node.prototype.calcShapePos = function calcShapePos(x, y) {
 	return {
-		x: this.rigidbody.position.x - this.size.width/2,
-		y: this.rigidbody.position.y - this.size.height/2,
+		x: x - this.size.width/2,
+		y: y - this.size.height/2,
 	}
 }
-Node.prototype.calcRigidbodyPos = function calcRigidbodyPos() {
+
+/**
+* @function
+* @public
+* Calculate the correct position of a rigidbody based on coordinates in canvas space.
+* rigidbody/physics position is relative to center - canvas/shape position is relative to top-left corner
+*
+* @returns {object} An object with structure {x: number, y: number}. x and y are coridantes in physics space.
+*/
+Node.prototype.calcRigidbodyPos = function calcRigidbodyPos(x, y) {
 	return {
-		x: this.shapes.container.x + this.size.width/2,
-		y: this.shapes.container.y + this.size.height/2
+		x: x + this.size.width/2,
+		y: y + this.size.height/2
 	}
 }
 
 Node.prototype.physicsUpdate = function physicsUpdate() {
-	const shapePos = this.calcShapePos();
-	this.shapes.container.x = shapePos.x;
-	this.shapes.container.y = shapePos.y;
+	const shapePosition = this.calcShapePos(this.rigidbody.position.x, this.rigidbody.position.y);
+	this.shapes.container.x = shapePosition.x;
+	this.shapes.container.y = shapePosition.y;
 	this.connections.forEach((connection)=>connection.update());
 }
 
+/**
+* @function
+* @public
+* Move a node to a position in canvas space. The top left corner of the node will be at the position.
+* @param {boolean=} center - If true, will center the node on the position.
+*/
 Node.prototype.move = function move(x, y, center=false) {
-	let xPos = x;
-	let yPos = y;
-
 	if(center === true) {
-		xPos -= this.size.width/2;
-		yPos -= this.size.height/2;
+		x -= this.size.width/2;
+		y -= this.size.height/2;
 	}
 
-	this.shapes.container.x = xPos;
-	this.shapes.container.y = yPos;
-	Matter.Body.setPosition(this.rigidbody, this.calcRigidbodyPos());
+	Matter.Body.setPosition(this.rigidbody, this.calcRigidbodyPos(x, y));
 }
 
 Node.prototype.mouseDown = function mouseDown(event) {
