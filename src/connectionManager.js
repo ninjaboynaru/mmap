@@ -1,8 +1,14 @@
 import Connection from './connection.js';
 const createjs = window.createjs;
 
-function ConnectionManager() {
+/**
+* @class
+* Manages node connection greation
+* @param {object} easystar - An instance of an easystar pathfinding object
+*/
+function ConnectionManager(easystar) {
 	this.container = new createjs.Container();
+	this.easystar = easystar;
 	this.pendingConnection = {
 		startNode: null,
 		endNode: null,
@@ -11,7 +17,7 @@ function ConnectionManager() {
 }
 
 ConnectionManager.prototype.nodeDown = function nodeDown(node) {
-	const newConnection = new Connection();
+	const newConnection = new Connection(this.easystar);
 	this.container.addChild(newConnection.line);
 	newConnection.start(node);
 

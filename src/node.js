@@ -20,6 +20,10 @@ function Node(mindMap, text, x=0, y=0, center) {
 		width: null,
 		height: null
 	}
+	this.previousPosition = {
+		x: -1,
+		y: -1
+	}
 
 	this.connectionActive = false;
 	this.dragging = false;
@@ -102,11 +106,30 @@ Node.prototype.calcRigidbodyPos = function calcRigidbodyPos(x, y) {
 	}
 }
 
+
+Node.prototype.didMove = function didMove() {
+		if(Math.floor(this.rigidbody.position.x) !== Math.floor(this.previousPosition.x)) {
+			return true;
+		}
+		else if(Math.floor(this.rigidbody.position.y) !== Math.floor(this.previousPosition.y)) {
+			return true;
+		}
+
+		return false;
+}
+
 Node.prototype.physicsUpdate = function physicsUpdate() {
+	if(this.didMove() === false) {
+		return;
+	}
+
 	const shapePosition = this.calcShapePos(this.rigidbody.position.x, this.rigidbody.position.y);
 	this.shapes.container.x = shapePosition.x;
 	this.shapes.container.y = shapePosition.y;
 	this.connections.forEach((connection)=>connection.update());
+
+	this.previousPosition.x = this.rigidbody.position.x;
+	this.previousPosition.y = this.rigidbody.position.y;
 }
 
 /**
