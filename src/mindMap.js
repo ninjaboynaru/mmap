@@ -16,6 +16,12 @@ function MindMap(canvasId = 'js-mindmap-canvas') {
 	this.nodes = [];
 	this.grid = new Grid(this);
 	this.connectionManager = new ConnectionManager(this.grid);
+	this.boundaries = {
+		top: null,
+		buttom: null,
+		left: null,
+		right: null
+	}
 
 	this.settings = {
 		mouseOverFrequency: 1000
@@ -37,6 +43,42 @@ MindMap.prototype.init = function init() {
 	rootNode.shapes.container.x = this.stage.canvas.width/2 - rootNode.size.width/2;
 	rootNode.shapes.container.y = this.stage.canvas.height/2 - rootNode.size.height/2;
 
+	const boundarySize = 20;
+
+	this.boundaries.top = new Matter.Bodies.rectangle(
+		this.stage.canvas.width/2,
+		0 - (boundarySize/2),
+		this.stage.canvas.width,
+		boundarySize,
+		{ isStatic: true }
+	);
+	this.boundaries.bottom = new Matter.Bodies.rectangle(
+		this.stage.canvas.width/2,
+		this.stage.canvas.height + (boundarySize/2),
+		this.stage.canvas.width,
+		boundarySize,
+		{ isStatic: true }
+	);
+	this.boundaries.left = new Matter.Bodies.rectangle(
+		0 - (boundarySize/2),
+		this.stage.canvas.height/2,
+		boundarySize,
+		this.stage.canvas.height,
+		{ isStatic: true }
+	);
+	this.boundaries.right = new Matter.Bodies.rectangle(
+		this.stage.canvas.width + (boundarySize/2),
+		this.stage.canvas.height/2,
+		boundarySize,
+		this.stage.canvas.height,
+		{ isStatic: true }
+	);
+
+	Matter.World.add(this.engine.world, this.boundaries.top);
+	Matter.World.add(this.engine.world, this.boundaries.bottom);
+	Matter.World.add(this.engine.world, this.boundaries.left);
+	Matter.World.add(this.engine.world, this.boundaries.right);
+
 	Matter.Events.on(this.engine, 'afterUpdate', () => this.stage.update());
 	Matter.Events.on(this.engine, 'collisionActive', this.collisionActive);
 	Matter.Events.on(this.engine, 'collisionStart', this.collisionStart);
@@ -57,7 +99,7 @@ MindMap.prototype.createNode = function(...args) {
 
 		node.connections.forEach((connection)=> connection.update(true));
 	});
-	
+
 	return newNode;
 }
 
