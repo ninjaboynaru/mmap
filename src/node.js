@@ -27,6 +27,8 @@ function Node(mindMap, text, x=0, y=0, center) {
 
 	this.connectionActive = false;
 	this.dragging = false;
+	this.updateConnections = false;
+	this.colliding = false;
 
 	this.init(text, x, y, center);
 }
@@ -73,6 +75,9 @@ Node.prototype.init = function init(text, x, y, center=false) {
 	this.shapes.container.on('pressmove', this.pressMove.bind(this));
 	this.shapes.container.on('pressup', this.pressUp.bind(this));
 	Matter.Events.on(this.mindMap.engine, 'afterUpdate', this.physicsUpdate.bind(this));
+	Matter.Events.on(this.rigidbody, 'collisionActive', this.collisionActive.bind(this));
+	Matter.Events.on(this.rigidbody, 'collisionStart', this.collisionStart.bind(this));
+	Matter.Events.on(this.rigidbody, 'collisionEnd', this.collisionEnd.bind(this));
 }
 
 
@@ -119,17 +124,36 @@ Node.prototype.didMove = function didMove() {
 }
 
 Node.prototype.physicsUpdate = function physicsUpdate() {
-	if(this.didMove() === false) {
+	const didMove = this.didMove();
+	let connectionsUpdated = false;
+	if(this.dragging) {
+		// update connections during while beaing draged
+		this.connections.forEach((connection)=>connection.update(false));
+		connectionsUpdated = true;
+	}
+	else if (this.updateConnections) {
+		// update connections after dragging is finished
+		this.connections.forEach((connection)=>connection.update(true));
+		this.updateConnections = false;
+		connectionsUpdated = true;
+	}
+	else if(this.colliding === true && didMove === true) {
+		this.connections.forEach((connection)=>connection.update(false));
+		this.connectionsUpdated = true;
+	}
+
+	if(didMove === false && connectionsUpdated === false) {
 		return;
 	}
+
 
 	const shapePosition = this.calcShapePos(this.rigidbody.position.x, this.rigidbody.position.y);
 	this.shapes.container.x = shapePosition.x;
 	this.shapes.container.y = shapePosition.y;
-	this.connections.forEach((connection)=>connection.update());
 
 	this.previousPosition.x = this.rigidbody.position.x;
 	this.previousPosition.y = this.rigidbody.position.y;
+	this.mindMap.grid.setNodeMoved();
 }
 
 /**
@@ -172,11 +196,31 @@ Node.prototype.pressMove = function pressMove(event) {
 Node.prototype.pressUp = function pressUp(event) {
 	this.shapes.text.alpha = 1;
 	this.dragging = false;
+	this.updateConnections = true;
+
+	this.mindMap.nodes.forEach((node) => {
+		if(node === this) {
+			return;
+		}
+
+		node.connections.forEach((connection)=> connection.update(true));
+	});
 
 	if(this.connectionActive) {
 		this.connectionActive = false;
 		this.mindMap.connectionManager.nodeUp();
 	}
+}
+
+Node.prototype.collisionActive = function collisionActive() {
+	this.colliding = true;
+}
+Node.prototype.collisionStart = function collisionStart() {
+	this.colliding = true;
+}
+
+Node.prototype.collisionEnd = function collisionEnd() {
+	this.colliding = false;
 }
 
 export default Node;

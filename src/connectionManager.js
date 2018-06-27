@@ -4,11 +4,11 @@ const createjs = window.createjs;
 /**
 * @class
 * Manages node connection greation
-* @param {object} easystar - An instance of an easystar pathfinding object
+* @param {object} grid - An instance of a Grid object
 */
-function ConnectionManager(easystar) {
+function ConnectionManager(grid) {
 	this.container = new createjs.Container();
-	this.easystar = easystar;
+	this.grid = grid;
 	this.pendingConnection = {
 		startNode: null,
 		endNode: null,
@@ -17,7 +17,7 @@ function ConnectionManager(easystar) {
 }
 
 ConnectionManager.prototype.nodeDown = function nodeDown(node) {
-	const newConnection = new Connection(this.easystar);
+	const newConnection = new Connection(this.grid);
 	this.container.addChild(newConnection.line);
 	newConnection.start(node);
 
@@ -39,7 +39,7 @@ ConnectionManager.prototype.nodeEnter = function nodeEnter(node) {
 	}
 
 	this.pendingConnection.endNode = node;
-	this.pendingConnection.connection.end(node);
+	this.pendingConnection.connection.end(node, true);
 }
 
 ConnectionManager.prototype.nodeExit = function nodeExit(node) {
