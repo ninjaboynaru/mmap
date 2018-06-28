@@ -1,20 +1,45 @@
 /**
 * @class
 * Generates and modifies grids for pathfinding use
-* @param {object} mindMap - A reference to a MindMap instance
+*
+* @param {[object]} nodes - A reference to an array of Node objects in the grid
+* @param {number} width - Width of the grid/canvas (nodes located outside of this will cause an error)
+* @param {number} height - Height of the grid/canvas (nodes located outside of this will cause an error)
+* @param {number} scaleFactor - How much to scale the grid resolution down by in order to improve performance. Larger numbers and smaller grids result in less accuracy but better performance. Should be a number between 0 and 1.
 */
-function Grid(mindMap) {
-	this.mindMap = mindMap
-	this.nodes = mindMap.nodes;
+function Grid(nodes, width, height, scaleFactor=1) {
+	this.nodes = nodes
+	this.size = { width, height };
+	this.scaleFactor = scaleFactor;
 	this.internalGrid = [];
-	this.nodeMoved = true;
+	this.nodesMoved = true;
+}
+
+Grid.prototype.scaleDown = function scaleDown(val, floor=true) {
+	const newValue = val * this.scaleFactor;
+	if(floor === true) {
+		return Math.floor(newValue);
+	}
+	else {
+		return Math.round(newValue);
+	}
+}
+
+Grid.prototype.scaleUp = function scaleUp(val, floor=true) {
+	const newValue = val / this.scaleFactor;
+	if(floor === true) {
+		return Math.floor(newValue);
+	}
+	else {
+		return Math.round(newValue);
+	}
 }
 
 Grid.prototype.buildBaseGrid = function buildBaseGrid() {
 	this.internalGrid = [];
-	for(let y = 0; y < this.mindMap.stage.canvas.height; y++) {
+	for(let y = 0; y < this.scaleDown(this.size.height, false); y++) {
 		const row = [];
-		for(let x = 0; x < this.mindMap.stage.canvas.width; x++) {
+		for(let x = 0; x < this.scaleDown(this.size.width, false); x++) {
 			row.push(1);
 		}
 		this.internalGrid.push(row);
@@ -22,16 +47,32 @@ Grid.prototype.buildBaseGrid = function buildBaseGrid() {
 }
 
 Grid.prototype.setNodeBoundaries = function setNodeBoundaries() {
-	for(const node of this.mindMap.nodes) {
-		const container = node.shapes.container;
-		const id = container.id;
+	for(const node of this.nodes) {
+		const id = node.shapes.container.id;
 
-		const xPos = Math.round(container.x);
-		const yPos = Math.round(container.y);
+		let xPos = this.scaleDown(node.position.x);
+		let yPos = this.scaleDown(node.position.y);
+
 		const size = {
-			width: Math.round(node.size.width),
-			height: Math.round(node.size.height)
+			width: this.scaleDown(node.size.width),
+			height: this.scaleDown(node.size.height)
 		};
+
+		if(xPos < 1) {
+			// hack to fix nodes whose scaled down positions end up as negative numbers
+			xPos = 0;
+		}
+		else if(xPos + size.width >= this.internalGrid[0].length) {
+			// hack to fix nodes on the edge and moving into the canvas
+			xPos = this.internalGrid[0].length - size.width - 1;
+		}
+
+		if(yPos < 1) {
+			yPos = 0;
+		}
+		else if(yPos + size.height >= this.internalGrid.length) {
+			yPos = this.internalGrid.length - size.height - 1;
+		}
 
 		// set boundaries for top and bottom side of the node
 		for(let x = xPos; x <= xPos + size.width; x++) {
@@ -48,14 +89,14 @@ Grid.prototype.setNodeBoundaries = function setNodeBoundaries() {
 }
 
 Grid.prototype.getGrid = function getGrid() {
-	if(this.nodeMoved === false) {
+	if(this.nodesMoved === false) {
 		return this.internalGrid;
 	}
 
 	this.buildBaseGrid();
 	this.setNodeBoundaries();
-	
-	this.nodeMoved = false;
+
+	this.nodesMoved = false;
 	return this.internalGrid;
 }
 

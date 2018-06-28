@@ -5,7 +5,7 @@ let devtool;
 if(process.env.NODE_ENV === 'production') {
 	console.log('Webpack building for production');
 	mode = 'production';
-	devtool = 'none';
+	devtool = 'eval-source-map';
 }
 else {
 	console.log('Webpack building for development');
@@ -19,7 +19,7 @@ module.exports = {
 	entry: path.join(__dirname, '/src/index.js'),
 	output: {
 		path: path.join(__dirname, '/dist'),
-		filename: 'index.js',
+		filename: 'mindmap.js',
 	},
 	resolve: {
 		extensions: ['.js', '.json'],

@@ -6,7 +6,8 @@
 		"watch:js": "npm run build:js -- --watch"
 	},
 	"dependencies": {
-		"easystarjs": "^0.4.3"
+		"easystarjs": "^0.4.3",
+		"eventemitter3": "^3.1.0"
 	},
 	"devDependencies": {
 		"webpack": "^4.12.0",
